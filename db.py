@@ -47,6 +47,11 @@ def log_audit(
     user_agent=None,
 ):
     db = get_db()
+    # Daca user_id nu exista in DB (ex: sesiune veche dupa reset DB), logam cu NULL
+    if user_id:
+        exists = db.execute('SELECT 1 FROM users WHERE id=?', (user_id,)).fetchone()
+        if not exists:
+            user_id = None
     db.execute(
         '''INSERT INTO audit_logs
                (id, user_id, action, resource_type, resource_id,
