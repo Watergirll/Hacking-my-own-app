@@ -2,7 +2,7 @@ import os
 import logging
 
 from flask import Flask, render_template
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 
 from blueprints.auth import auth_bp
 from blueprints.main import main_bp
@@ -31,7 +31,11 @@ app.register_blueprint(tickets_bp)
 
 app.teardown_appcontext(close_db)
 
-# FIX #5 — Error handler global: mesaje generice pentru client
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return render_template('errors/403.html'), 400
+
+
 @app.errorhandler(404)
 def not_found(e):
     return render_template('errors/404.html'), 404

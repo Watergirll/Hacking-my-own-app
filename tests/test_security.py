@@ -3,6 +3,7 @@ Automated security tests for Deskly v2 (secure).
 Validates that all 6 identified vulnerabilities have been remediated.
 """
 import os
+import re
 import sys
 import tempfile
 
@@ -176,22 +177,24 @@ def test_error_no_stacktrace(client):
 # ─────────────────────────────────────────────────────────────────────── #
 # TEST 7: Lockout — account locks after 5 failed login attempts
 # ─────────────────────────────────────────────────────────────────────── #
+def _get_csrf_from_page(client, url):
+    rv = client.get(url)
+    match = re.search(r'name="csrf_token"\s+value="([^"]+)"', rv.data.decode())
+    return match.group(1) if match else ''
+
+
 def test_lockout(client):
     _register(client, 'lockout@test.com', password='CorrectPass1!')
 
     for i in range(5):
-        client.get('/auth/login')
-        with client.session_transaction() as sess:
-            csrf = sess.get('csrf_token', '')
+        csrf = _get_csrf_from_page(client, '/auth/login')
         client.post('/auth/login', data={
             'email': 'lockout@test.com',
             'password': 'WrongPassword',
             'csrf_token': csrf,
         })
 
-    client.get('/auth/login')
-    with client.session_transaction() as sess:
-        csrf = sess.get('csrf_token', '')
+    csrf = _get_csrf_from_page(client, '/auth/login')
     rv = client.post('/auth/login', data={
         'email': 'lockout@test.com',
         'password': 'CorrectPass1!',

@@ -10,7 +10,7 @@ Această versiune conține vulnerabilități introduse **intenționat** pentru s
 ```bash
 # 1. Clonează repo-ul pe branch-ul vulnerabil
 git clone -b v2-secure https://github.com/Watergirll/Hacking-my-own-app.git deskly-v2
-cd deskly
+cd deskly-v2
 
 # 2. Build și pornire containere
 
