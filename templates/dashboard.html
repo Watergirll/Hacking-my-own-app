@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h4 class="fw-bold mb-1">Welcome back, {{ session.user_email }}</h4>
+  <p class="text-muted mb-0">
+    Role: <span class="badge rounded-pill" style="background:#6366f1">{{ session.user_role }}</span>
+  </p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-3 p-3" style="background:#ede9fe">
+          <i class="bi bi-ticket-detailed fs-4" style="color:#7c3aed"></i>
+        </div>
+        <div>
+          <div class="text-muted small">My Tickets</div>
+          <div class="fw-bold fs-5">{{ total }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-lg-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-3 p-3" style="background:#fef3c7">
+          <i class="bi bi-exclamation-triangle fs-4 text-warning"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Open</div>
+          <div class="fw-bold fs-5">{{ open_c }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-lg-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-3 p-3" style="background:#dcfce7">
+          <i class="bi bi-check-circle fs-4 text-success"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Resolved</div>
+          <div class="fw-bold fs-5">{{ resolved }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-lg-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-3 p-3" style="background:#fee2e2">
+          <i class="bi bi-fire fs-4 text-danger"></i>
+        </div>
+        <div>
+          <div class="text-muted small">High Severity</div>
+          <div class="fw-bold fs-5">{{ high }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body d-flex align-items-center justify-content-between px-4 py-3">
+    <span class="text-muted">
+      <i class="bi bi-ticket-detailed me-2 opacity-50"></i>
+      {% if total == 0 %}No tickets yet.{% else %}{{ total }} ticket(s) in total.{% endif %}
+    </span>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-list-ul me-1"></i>View all
+      </a>
+      <a href="{{ url_for('tickets.create') }}" class="btn btn-sm" style="background:#6366f1;color:#fff">
+        <i class="bi bi-plus-circle me-1"></i>New Ticket
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

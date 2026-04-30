@@ -1,0 +1,29 @@
+# Development artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Local database (rebuilt from schema.sql inside container)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker files themselves
+Dockerfile
+docker-compose.yml
+.dockerignore
+nginx/
