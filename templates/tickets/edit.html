@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Edit — {{ ticket.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <a href="{{ url_for('tickets.view', ticket_id=ticket.id) }}" class="text-muted text-decoration-none small">
+    <i class="bi bi-arrow-left me-1"></i>Back to ticket
+  </a>
+  <h4 class="fw-bold mt-1 mb-0">Edit Ticket</h4>
+</div>
+
+<div class="card border-0 shadow-sm" style="max-width:680px">
+  <div class="card-body p-4">
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label fw-semibold small" for="title">Title <span class="text-danger">*</span></label>
+        <input type="text" id="title" name="title" class="form-control"
+               value="{{ ticket.title }}" maxlength="200" required />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold small" for="description">
+          Description <span class="text-danger">*</span>
+        </label>
+        <textarea id="description" name="description" class="form-control" rows="5" required>{{ ticket.description }}</textarea>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold small" for="severity">Severity</label>
+          <select id="severity" name="severity" class="form-select">
+            {% for s in severities %}
+              <option value="{{ s }}" {% if ticket.severity == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-semibold small" for="tags">Tags</label>
+          <input type="text" id="tags" name="tags" class="form-control"
+                 value="{{ tags_csv }}" placeholder="network, patching, phishing" />
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn" style="background:#6366f1;color:#fff">
+          <i class="bi bi-save me-1"></i>Save Changes
+        </button>
+        <a href="{{ url_for('tickets.view', ticket_id=ticket.id) }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
