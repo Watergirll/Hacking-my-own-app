@@ -29,6 +29,8 @@ services:
       - db_data:/app/data
     expose:
       - "5000"
+    ports:
+      - "5001:5000"    # Flask accesibil direct pe http://localhost:5001
     networks:
       - deskly_net
     healthcheck:
