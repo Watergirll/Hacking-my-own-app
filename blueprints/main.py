@@ -53,3 +53,17 @@ def dashboard():
     return render_template('dashboard.html',
                            total=total, open_c=open_c,
                            resolved=resolved, high=high)
+
+
+@main_bp.route('/audit')
+@manager_required
+def audit_log():
+    db = get_db()
+    logs = db.execute(
+        '''SELECT a.*, u.email AS user_email
+           FROM audit_logs a
+           LEFT JOIN users u ON a.user_id = u.id
+           ORDER BY a.created_at DESC
+           LIMIT 200'''
+    ).fetchall()
+    return render_template('audit_log.html', logs=logs)

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h4 class="fw-bold mb-1">Audit Log</h4>
+  <p class="text-muted small mb-0">Ultimele 200 evenimente — vizibil doar pentru Manager</p>
+</div>
+
+{% if logs %}
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0" style="font-size:.85rem">
+      <thead class="table-dark">
+        <tr>
+          <th>Timestamp</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Resource</th>
+          <th>IP</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td class="text-muted text-nowrap">{{ log.created_at }}</td>
+          <td>
+            {% if log.user_email %}
+              <span class="text-dark">{{ log.user_email }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if log.action in ('LOGIN_FAILED', 'UNAUTHORIZED_ACCESS', 'ERROR') %}
+              <span class="badge bg-danger">{{ log.action }}</span>
+            {% elif log.action in ('LOGIN_SUCCESS', 'REGISTER') %}
+              <span class="badge bg-success">{{ log.action }}</span>
+            {% elif log.action == 'LOGOUT' %}
+              <span class="badge bg-secondary">{{ log.action }}</span>
+            {% elif log.action.startswith('TICKET_') %}
+              <span class="badge" style="background:#6366f1">{{ log.action }}</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">{{ log.action }}</span>
+            {% endif %}
+          </td>
+          <td class="text-muted">
+            {{ log.resource_type }}
+            {% if log.resource_id %}
+              <br><code style="font-size:.75rem">{{ log.resource_id[:8] }}...</code>
+            {% endif %}
+          </td>
+          <td class="text-muted text-nowrap">{{ log.ip_address or '—' }}</td>
+          <td class="text-muted">{{ log.message or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-journal-text fs-1 d-block mb-2 opacity-25"></i>
+    No audit events yet.
+  </div>
+</div>
+{% endif %}
+{% endblock %}

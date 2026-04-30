@@ -99,7 +99,8 @@
         <span class="text-uppercase text-secondary" style="font-size:.65rem;letter-spacing:.08em">Admin</span>
       </li>
       <li class="nav-item">
-        <a href="#" class="nav-link">
+        <a href="{{ url_for('main.audit_log') }}"
+           class="nav-link {% if request.endpoint == 'main.audit_log' %}active{% endif %}">
           <i class="bi bi-journal-text me-2"></i>Audit Log
         </a>
       </li>

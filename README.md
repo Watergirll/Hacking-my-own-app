@@ -3,7 +3,6 @@
 Aplicație web pentru managementul incidentelor IT.  
 Această versiune conține vulnerabilități introduse **intenționat** pentru scopuri educaționale (ethical hacking lab).
 
-
 ---
 
 ## Pornire rapidă
@@ -14,14 +13,14 @@ git clone -b v1-vulnerable https://github.com/Watergirll/Hacking-my-own-app.git 
 cd deskly
 
 # 2. Build și pornire containere
-docker compose build
-docker compose up -d
+
+docker compose up -d --build
 
 # 3. Verifică starea
 docker compose ps
 ```
 
-Aplicația rulează la **http://localhost:80**
+Aplicația rulează la **[http://localhost:80](http://localhost:80)**
 
 ---
 
@@ -52,8 +51,6 @@ docker compose down -v
 # Repornire — DB se reinițializează automat din schema.sql
 docker compose up -d
 ```
-
-
 
 ---
 
