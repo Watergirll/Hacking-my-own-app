@@ -1,4 +1,4 @@
-import hashlib
+import bcrypt
 
 from flask import (
     Blueprint,
@@ -14,17 +14,15 @@ from db import gen_uuid, get_db, log_audit, now_iso
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+MAX_FAILED_LOGINS = 5
 
-# ------------------------------------------------------------------ #
-# [VULN #6] MD5 fara salt — hash slab, reversibil prin rainbow tables #
-# FIX (v2): bcrypt.hashpw(password.encode(), bcrypt.gensalt())        #
-# ------------------------------------------------------------------ #
+
 def _hash_password(password: str) -> str:
-    return hashlib.md5(password.encode()).hexdigest()
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 def _check_password(password: str, stored_hash: str) -> bool:
-    return _hash_password(password) == stored_hash
+    return bcrypt.checkpw(password.encode(), stored_hash.encode())
 
 
 # ================================================================== #
@@ -37,23 +35,27 @@ def register():
         password = request.form.get('password', '')
         role     = request.form.get('role', 'ANALYST')
 
-        # ---------------------------------------------------------- #
-        # [VULN #5] Validare minima — nu se verifica lungime / format #
-        # Erorile DB (ex. email duplicat) se propaga ca 500 cu trace  #
-        # FIX (v2): validare completa + handler global erori          #
-        # ---------------------------------------------------------- #
         if not email or not password:
             flash('Email and password are required.', 'danger')
+            return render_template('auth/register.html')
+
+        if len(password) < 8:
+            flash('Password must be at least 8 characters.', 'danger')
             return render_template('auth/register.html')
 
         if role not in ('ANALYST', 'MANAGER'):
             role = 'ANALYST'
 
         db = get_db()
+
+        existing = db.execute('SELECT 1 FROM users WHERE email=?', (email,)).fetchone()
+        if existing:
+            flash('Email already registered.', 'danger')
+            return render_template('auth/register.html')
+
         user_id = gen_uuid()
         ts = now_iso()
 
-        # [VULN #6] parola hash-uita cu MD5 (fara salt)
         db.execute(
             '''INSERT INTO users
                    (id, email, password_hash, role, created_at, updated_at)
@@ -89,17 +91,22 @@ def login():
             'SELECT * FROM users WHERE email = ?', (email,)
         ).fetchone()
 
-        # ---------------------------------------------------------- #
-        # [VULN #4B] Nu se verifica is_locked — brute force posibil   #
-        # chiar daca failed_logins creste in DB.                      #
-        # FIX (v2): if user['is_locked']: return 403                  #
-        # ---------------------------------------------------------- #
+        if user and user['is_locked']:
+            log_audit(
+                user['id'], 'LOGIN_FAILED', 'auth', user['id'],
+                f'Login attempt on locked account: {email}',
+                request.remote_addr,
+                request.headers.get('User-Agent'),
+            )
+            flash('Account is locked due to too many failed attempts. Contact an admin.', 'danger')
+            return render_template('auth/login.html')
+
         if user and _check_password(password, user['password_hash']):
             session.clear()
             session['user_id']    = user['id']
             session['user_email'] = user['email']
             session['user_role']  = user['role']
-            # [VULN #4B] Sesiunea nu are expirare setata explicit
+            session.permanent = True
 
             ts = now_iso()
             db.execute(
@@ -116,17 +123,19 @@ def login():
             )
             return redirect(url_for('main.dashboard'))
 
-        # Login esuat
+        # Login failed
         if user:
             ts = now_iso()
+            new_count = user['failed_logins'] + 1
+            locked = 1 if new_count >= MAX_FAILED_LOGINS else 0
             db.execute(
-                'UPDATE users SET failed_logins=failed_logins+1, updated_at=? WHERE id=?',
-                (ts, user['id']),
+                'UPDATE users SET failed_logins=?, is_locked=?, updated_at=? WHERE id=?',
+                (new_count, locked, ts, user['id']),
             )
             db.commit()
             log_audit(
                 user['id'], 'LOGIN_FAILED', 'auth', user['id'],
-                f'Login failed: {email}',
+                f'Login failed ({new_count}/{MAX_FAILED_LOGINS}): {email}',
                 request.remote_addr,
                 request.headers.get('User-Agent'),
             )
@@ -151,10 +160,5 @@ def logout():
             request.headers.get('User-Agent'),
         )
 
-    # ---------------------------------------------------------- #
-    # [VULN #4B] session.clear() sterge doar cookie-ul client.   #
-    # Nu exista invalidare server-side → token-ul vechi refolosit #
-    # FIX (v2): tabel sessions cu revoked_at setat la logout      #
-    # ---------------------------------------------------------- #
     session.clear()
     return redirect(url_for('auth.login'))

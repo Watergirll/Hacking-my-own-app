@@ -71,33 +71,23 @@ def search():
     role = session['user_role']
     q    = request.args.get('q', '')
 
-    # ------------------------------------------------------------------ #
-    # [VULN #2] SQL Injection — input-ul e concatenat direct in query.    #
-    # Exemplu PoC: q = %' UNION SELECT id,email,password_hash,role,       #
-    #                   password_hash,id,created_at,updated_at            #
-    #                   FROM users--                                       #
-    # FIX (v2): query parametrizat cu LIKE ?                              #
-    # ------------------------------------------------------------------ #
     if role == 'MANAGER':
-        raw_query = (
+        tickets = db.execute(
             "SELECT t.*, u.email AS owner_email "
             "FROM tickets t JOIN users u ON t.owner_id=u.id "
-            "WHERE t.title LIKE '%" + q + "%' "
-            "OR t.description LIKE '%" + q + "%' "
-            "ORDER BY t.created_at DESC"
-        )
+            "WHERE t.title LIKE ? OR t.description LIKE ? "
+            "ORDER BY t.created_at DESC",
+            (f'%{q}%', f'%{q}%'),
+        ).fetchall()
     else:
-        raw_query = (
+        tickets = db.execute(
             "SELECT t.*, u.email AS owner_email "
             "FROM tickets t JOIN users u ON t.owner_id=u.id "
-            "WHERE t.owner_id='" + uid + "' "
-            "AND (t.title LIKE '%" + q + "%' "
-            "OR t.description LIKE '%" + q + "%') "
-            "ORDER BY t.created_at DESC"
-        )
-
-    # [VULN #5] Eroarea DB propagata direct la client (debug=True)
-    tickets = db.execute(raw_query).fetchall()
+            "WHERE t.owner_id=? "
+            "AND (t.title LIKE ? OR t.description LIKE ?) "
+            "ORDER BY t.created_at DESC",
+            (uid, f'%{q}%', f'%{q}%'),
+        ).fetchall()
 
     log_audit(uid, 'SEARCH', 'ticket', None, f'Search: {q[:50]}',
               request.remote_addr, request.headers.get('User-Agent'))
@@ -177,13 +167,11 @@ def view(ticket_id):
     if not ticket:
         abort(404)
 
-    # ------------------------------------------------------------------ #
-    # [VULN #1] IDOR — nicio verificare ownership/rol.                    #
-    # Un Analyst poate vedea tichetul altui user schimband ID-ul in URL.  #
-    # FIX (v2):                                                           #
-    #   if role != 'MANAGER' and ticket['owner_id'] != uid:              #
-    #       log_audit(uid, 'UNAUTHORIZED_ACCESS', ...); abort(403)        #
-    # ------------------------------------------------------------------ #
+    if role != 'MANAGER' and ticket['owner_id'] != uid:
+        log_audit(uid, 'UNAUTHORIZED_ACCESS', 'ticket', ticket_id,
+                  f'IDOR attempt on view by {uid[:8]}',
+                  request.remote_addr, request.headers.get('User-Agent'))
+        abort(403)
 
     tags = db.execute('SELECT tag FROM ticket_tags WHERE ticket_id=?', (ticket_id,)).fetchall()
 
@@ -208,10 +196,11 @@ def edit(ticket_id):
     if not ticket:
         abort(404)
 
-    # ------------------------------------------------------------------ #
-    # [VULN #1] IDOR — Analyst poate edita tichetul altui user.          #
-    # FIX (v2): acelasi check ownership ca la view                        #
-    # ------------------------------------------------------------------ #
+    if role != 'MANAGER' and ticket['owner_id'] != uid:
+        log_audit(uid, 'UNAUTHORIZED_ACCESS', 'ticket', ticket_id,
+                  f'IDOR attempt on edit by {uid[:8]}',
+                  request.remote_addr, request.headers.get('User-Agent'))
+        abort(403)
 
     if request.method == 'POST':
         title       = request.form.get('title', '').strip()
@@ -267,12 +256,6 @@ def change_status(ticket_id):
     ticket = db.execute('SELECT * FROM tickets WHERE id=?', (ticket_id,)).fetchone()
     if not ticket:
         abort(404)
-
-    # ------------------------------------------------------------------ #
-    # [VULN #4A] CSRF — endpoint accepta POST fara token CSRF.            #
-    # O pagina externa poate trimite acest request cand userul e logat.   #
-    # FIX (v2): Flask-WTF CSRF token + SameSite=Lax cookie               #
-    # ------------------------------------------------------------------ #
 
     if role != 'MANAGER' and ticket['owner_id'] != uid:
         log_audit(uid, 'UNAUTHORIZED_ACCESS', 'ticket', ticket_id,

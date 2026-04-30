@@ -1,4 +1,4 @@
-# Deskly — v1-vulnerable
+# Deskly — v2-secure
 
 Aplicație web pentru managementul incidentelor IT.  
 Această versiune conține vulnerabilități introduse **intenționat** pentru scopuri educaționale (ethical hacking lab).
@@ -9,7 +9,7 @@ Această versiune conține vulnerabilități introduse **intenționat** pentru s
 
 ```bash
 # 1. Clonează repo-ul pe branch-ul vulnerabil
-git clone -b v1-vulnerable https://github.com/Watergirll/Hacking-my-own-app.git deskly
+git clone -b v2-secure https://github.com/Watergirll/Hacking-my-own-app.git deskly-v2
 cd deskly
 
 # 2. Build și pornire containere
@@ -54,4 +54,4 @@ docker compose up -d
 
 ---
 
-Remedierile sunt pe branch-ul `v2-fixed`.
+Aplicatia vulnerabila este pe branch-ul `v1-vulnerable`.

@@ -1,5 +1,5 @@
 # ┌─────────────────────────────────────────────────────────────────┐
-# │  Deskly v1 – VULNERABLE (intentional, for security lab only)    │
+# │  Deskly v2 – SECURE                                            │
 # │                                                                 │
 # │  3-tier layout:                                                 │
 # │   frontend  →  nginx:80  (reverse proxy)                        │
@@ -17,20 +17,15 @@ services:
     container_name: deskly_backend
     restart: unless-stopped
     environment:
-      # Path inside container where the SQLite volume is mounted
-      DATABASE: /app/data/deskly_v1.db
-      # [VULN #4B] weak secret — kept intentionally for lab
-      SECRET_KEY: "deskly-dev-secret"
-      # [VULN #5] debug mode on — keeps stack traces visible
-      FLASK_DEBUG: "1"
+      DATABASE: /app/data/deskly_v2.db
+      SECRET_KEY: "v2-s3cur3-r4nd0m-k3y-ch4ng3-1n-pr0d"
+      FLASK_DEBUG: "0"
     volumes:
-      # db tier: SQLite file lives on a named volume, separate from
-      # the container image → data survives container restarts
       - db_data:/app/data
     expose:
       - "5000"
     ports:
-      - "5001:5000"    # Flask accesibil direct pe http://localhost:5001
+      - "5001:5000"
     networks:
       - deskly_net
     healthcheck:
@@ -59,8 +54,6 @@ services:
 volumes:
   db_data:
     name: deskly_db_data
-    # This named volume IS the "db tier": isolated, persisted,
-    # mountable independently for DB inspection or backup.
 
 # ── NETWORKS ─────────────────────────────────────────────────────── #
 networks:
